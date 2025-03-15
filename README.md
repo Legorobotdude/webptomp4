@@ -15,7 +15,7 @@ Any OS that supports python3
 `pip3 install moviepy pillow argparse glob2`
 # Usage:
 Copy videoconvert.py in same folder as video files.
-### Convert all webp files in same folder (no user inputs defalut to 20fps, set new fps with --fps number)
+### Convert all webp files in same folder (no user inputs default setting is 20framespersecond, set new fps with --fps number)
 Run code: `python3 videoconvert.py`\
 \
 ![percentage](./images/image_normal.png)
