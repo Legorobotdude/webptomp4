@@ -6,10 +6,13 @@ Any OS that supports python3
 1. Python3
 2. Python3 Pillow
 3. Python3 Moviepy
+4. Python3 Pillow
+5. Python3 Argparse
+6. Python3 Glob2
 # Install for Ubuntu
 `sudo apt-get update`\
 `sudo apt-get install python3`\
-`pip3 install moviepy`
+`pip3 install moviepy pillow argparse glob2`
 # Usage:
 Copy videoconvert.py in same folder as video files.
 ### Convert all webp files in same folder (no user inputs)
