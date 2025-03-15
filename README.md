@@ -24,7 +24,7 @@ Run code: `python3 videoconvert.py --percentage 80`\
 \
 ![percentage](./images/image_prosent.png)
 
-### Convert all videos and extra video file that combined all videos (combining videos may fail if the videos are incompatible with each other, such as having different resolutions)
+### Convert all videos and extra video file that combined all videos (videos sorted by filename a-z and 1-9), (combining videos may fail if the videos are incompatible with each other, such as having different resolutions)
 Run code: `python3 videoconvert.py --combineoutput final.mp4`\
 \
 ![combine](./images/image_combine.png)
