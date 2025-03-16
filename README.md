@@ -9,12 +9,18 @@ Any OS that supports python3
 4. Python3 Pillow
 5. Python3 Argparse
 6. Python3 Glob2
-# Install for Ubuntu
+# Install for Ubuntu bash
 `sudo apt-get update`\
 `sudo apt-get install python3`\
 `pip3 install moviepy pillow argparse glob2`
+# Install for Windows cmd
+`winget install python3`\
+`pip3 install moviepy pillow argparse glob2`
 # Usage:
-Copy videoconvert.py in same folder as video files.
+Copy videoconvert.py in same folder as video files. Test commands:
+`videoconvert.py --fps 16`\
+`python3 videoconvert.py --fps 16`
+
 ### Convert all webp files in same folder (no user inputs default setting is 20framespersecond, set new fps with --fps number)
 Run code: `python3 videoconvert.py`\
 \
