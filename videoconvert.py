@@ -5,6 +5,8 @@ import argparse
 import glob
 from moviepy import *
 import PIL.Image
+from concurrent.futures import ThreadPoolExecutor
+import multiprocessing
 
 def analyse_image(path):
     im = PIL.Image.open(path)
@@ -94,6 +96,10 @@ def combine_videos(output_files, output_file):
     final_clip.write_videofile(output_file, codec="libx264")
     print(f"Combined video saved as {output_file}")
 
+def process_file(input_file, output_dir, fps, percentage):
+    print(f"Processing: {input_file} ({percentage}% in first file, {100 - percentage}% in second file)")
+    return webp_mp4(input_file, output_dir, fps, percentage)
+
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Convert WEBP files to MP4 and optionally combine them")
     parser.add_argument("input_files", nargs='*', help="Input file names (.webp)")
@@ -101,6 +107,7 @@ def parse_arguments():
     parser.add_argument("--fps", type=int, default=20, help="Frames per second (default: 20)")
     parser.add_argument("--percentage", type=int, default=100, help="Percentage of the video to process in the first file (default: 100%)")
     parser.add_argument("--combineoutput", help="Filename for combined output video (optional)")
+    parser.add_argument("--threads", type=int, default=None, help="Number of threads to use (default: number of CPU cores)")
     return parser.parse_args()
 
 if __name__ == "__main__":
@@ -111,12 +118,27 @@ if __name__ == "__main__":
         print("No WEBP files found in the current directory.")
         exit()
     
+    # Use number of CPU cores if threads not specified
+    num_threads = args.threads or multiprocessing.cpu_count()
+    print(f"Using {num_threads} threads for parallel processing")
+    
     all_output_files = []
     
-    for input_file in input_files:
-        print(f"Processing: {input_file} ({args.percentage}% in first file, {100 - args.percentage}% in second file)")
-        output_files = webp_mp4(input_file, args.output_dir, args.fps, args.percentage)
-        all_output_files.extend(output_files)
+    # Process files in parallel using ThreadPoolExecutor
+    with ThreadPoolExecutor(max_workers=num_threads) as executor:
+        # Create a list of futures for each file
+        futures = [
+            executor.submit(process_file, input_file, args.output_dir, args.fps, args.percentage)
+            for input_file in input_files
+        ]
+        
+        # Collect results as they complete
+        for future in futures:
+            try:
+                output_files = future.result()
+                all_output_files.extend(output_files)
+            except Exception as e:
+                print(f"Error processing file: {e}")
     
     if args.combineoutput and all_output_files:
         combine_videos(all_output_files, args.combineoutput)
