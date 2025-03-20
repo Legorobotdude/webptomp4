@@ -23,7 +23,19 @@ A fast, multithreaded converter for webp animations to mp4 format. Works on any 
 
 ## Installation
 
-### Ubuntu/Debian
+### Quick Install (All Platforms)
+```bash
+# Clone the repository
+git clone https://github.com/Legorobotdude/webptomp4.git
+cd webptomp4
+
+# Install all dependencies
+pip3 install -r requirements.txt
+```
+
+### Manual Installation
+
+#### Ubuntu/Debian
 ```bash
 sudo apt-get update
 sudo apt-get install python3
