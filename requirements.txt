@@ -1,4 +1,6 @@
 Pillow>=10.2.0
 moviepy>=1.0.3
 argparse>=1.4.0
-glob2>=0.7 
+glob2>=0.7
+# For ffmpeg-based interpolation
+ffmpeg-python>=0.2.0 

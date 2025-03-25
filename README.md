@@ -20,6 +20,9 @@ A fast, multithreaded converter for webp animations to mp4 format. Works on any 
   - Moviepy
   - Argparse
   - Glob2
+  - ffmpeg-python (for interpolation features)
+- External dependencies:
+  - ffmpeg (required for interpolation features)
 
 ## Installation
 
@@ -80,17 +83,30 @@ python3 videoconvert.py -o output_folder
 
 # Process specific files
 python3 videoconvert.py file1.webp file2.webp
+
+# Enable frame interpolation to double the frame rate (requires ffmpeg)
+python3 videoconvert.py --interpolate
+
+# Specify custom target frame rate for interpolation
+python3 videoconvert.py --interpolate --target_fps 60
+
+# Use specific interpolation methods
+python3 videoconvert.py --interpolate --mi_mode mci --mc_mode aobmc
 ```
 
 ### Command Line Arguments
 
 | Argument | Description | Default |
 |----------|-------------|---------|
-| `--fps` | Frames per second | 20 |
+| `--fps` | Frames per second for initial conversion | 20 |
 | `--threads` | Number of parallel conversions | Number of CPU cores |
 | `--percentage` | Split video into two parts | 100 |
 | `--combineoutput` | Output filename for combined video | None |
 | `-o, --output_dir` | Output directory | Current directory |
+| `--interpolate` | Enable frame interpolation (requires ffmpeg) | False |
+| `--target_fps` | Target frame rate for interpolation | 2x input fps |
+| `--mi_mode` | Motion interpolation mode (mci, blend, dup) | mci |
+| `--mc_mode` | Motion compensation mode (obmc, aobmc) | aobmc |
 
 ## Examples
 
@@ -118,6 +134,9 @@ python3 videoconvert.py --combineoutput final.mp4
 - Combining videos may fail if they have different resolutions
 - For best performance, the number of threads will automatically match your CPU cores
 - Temporary files are automatically cleaned up after conversion
+- Frame interpolation can significantly improve video smoothness but requires ffmpeg to be installed
+- The default interpolation doubles the frame rate (e.g., 20fps → 40fps)
+- For animated stickers, the typical frame rate is around 16fps, so interpolation would result in 32fps
 
 ## Roadmap
 
