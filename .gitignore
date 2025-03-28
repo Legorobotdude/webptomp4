@@ -47,3 +47,4 @@ ffmpeg*/
 *.tmp
 temp/
 tmp/ 
+ffmpeg.zip

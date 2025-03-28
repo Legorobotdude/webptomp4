@@ -1,5 +1,5 @@
 @echo off
-echo WebP to MP4 Converter with Frame Interpolation and Upscaling
+echo WebP to MP4 Converter with Frame Interpolation (No Upscaling)
 echo Place your WebP files in this folder and run this batch file.
 echo.
 
@@ -11,8 +11,8 @@ if not exist *.webp (
     exit /b
 )
 
-REM Run the conversion with scaling
-python videoconvert.py --fps 16 --interpolate --target_fps 32 --scale 1.5
+REM Run the conversion
+python videoconvert.py --fps 16 --interpolate --target_fps 32
 
 echo.
 echo Conversion complete! Press any key to exit.
