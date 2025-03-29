@@ -51,7 +51,64 @@ def process_image(path, temp_dir):
         pass
     return images
 
-def webp_mp4(input_file, output_dir=None, fps=20, percentage=100, interpolate=False, target_fps=None, mi_mode="mci", mc_mode="aobmc"):
+def interpolate_video(input_file, output_file, target_fps, mi_mode="mci", mc_mode="aobmc", scale=None, scale_width=None, scale_height=None):
+    """
+    Use ffmpeg to interpolate a video to a higher frame rate and optionally scale it.
+    
+    Args:
+        input_file: Path to the input video file
+        output_file: Path to save the interpolated video
+        target_fps: Target frame rate for interpolation
+        mi_mode: Motion interpolation mode (default: mci)
+        mc_mode: Motion compensation mode (default: aobmc)
+        scale: Float multiplier for both dimensions (e.g., 1.5 for 150% size)
+        scale_width: Specific target width (overrides scale)
+        scale_height: Specific target height (overrides scale)
+        
+    Note:
+        This function requires ffmpeg to be installed on your system.
+        If ffmpeg is not found, the function will fall back to the non-interpolated video.
+    """
+    # Build the filter string
+    filters = []
+    
+    # Add scaling if requested
+    if scale_width and scale_height:
+        filters.append(f"scale={scale_width}:{scale_height}:flags=lanczos")
+    elif scale:
+        filters.append(f"scale=iw*{scale}:ih*{scale}:flags=lanczos")
+        
+    # Add interpolation
+    filters.append(f"minterpolate=fps={target_fps}:mi_mode={mi_mode}:mc_mode={mc_mode}")
+    
+    # Combine filters
+    filter_string = ",".join(filters)
+    
+    cmd = [
+        "ffmpeg", "-y", "-i", input_file, 
+        "-vf", filter_string,
+        "-c:v", "libx264", "-c:a", "copy", output_file
+    ]
+    try:
+        subprocess.run(cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        scaling_msg = ""
+        if scale:
+            scaling_msg = f" and scaled by {scale}x"
+        elif scale_width and scale_height:
+            scaling_msg = f" and scaled to {scale_width}x{scale_height}"
+        print(f"Successfully interpolated video to {target_fps} fps{scaling_msg}: {output_file}")
+    except subprocess.CalledProcessError as e:
+        print(f"Error processing video: {e}")
+        # If processing fails, copy the original file
+        shutil.copy(input_file, output_file)
+        print(f"Falling back to original version: {output_file}")
+    except FileNotFoundError:
+        print(f"Error: ffmpeg not found. Please install ffmpeg to use interpolation features.")
+        # If ffmpeg is not found, copy the original file
+        shutil.copy(input_file, output_file)
+        print(f"Falling back to original version: {output_file}")
+
+def webp_mp4(input_file, output_dir=None, fps=20, percentage=100, interpolate=False, target_fps=None, mi_mode="mci", mc_mode="aobmc", scale=None, scale_width=None, scale_height=None):
     temp_dir = tempfile.mkdtemp()
     try:
         images = process_image(input_file, temp_dir)
@@ -67,7 +124,6 @@ def webp_mp4(input_file, output_dir=None, fps=20, percentage=100, interpolate=Fa
         
         if output_dir:
             os.makedirs(output_dir, exist_ok=True)
-            # Only add _part1 if there will be a part2
             output_file1 = os.path.join(output_dir, f'{base_name}{"_part1" if part2_images else ""}.mp4')
             temp_output_file1 = os.path.join(temp_dir, f'{base_name}{"_part1" if part2_images else ""}_temp.mp4')
             output_file2 = os.path.join(output_dir, f'{base_name}_part2.mp4') if part2_images else None
@@ -86,7 +142,7 @@ def webp_mp4(input_file, output_dir=None, fps=20, percentage=100, interpolate=Fa
         if interpolate:
             if target_fps is None:
                 target_fps = fps * 2
-            interpolate_video(temp_output_file1, output_file1, target_fps, mi_mode, mc_mode)
+            interpolate_video(temp_output_file1, output_file1, target_fps, mi_mode, mc_mode, scale, scale_width, scale_height)
             
         output_files = [output_file1]
         
@@ -95,47 +151,13 @@ def webp_mp4(input_file, output_dir=None, fps=20, percentage=100, interpolate=Fa
             clip2.write_videofile(temp_output_file2 if interpolate else output_file2, codec="libx264")
             
             if interpolate:
-                interpolate_video(temp_output_file2, output_file2, target_fps, mi_mode, mc_mode)
+                interpolate_video(temp_output_file2, output_file2, target_fps, mi_mode, mc_mode, scale, scale_width, scale_height)
                 
             output_files.append(output_file2)
         
         return output_files
     finally:
         shutil.rmtree(temp_dir)
-
-def interpolate_video(input_file, output_file, target_fps, mi_mode="mci", mc_mode="aobmc"):
-    """
-    Use ffmpeg to interpolate a video to a higher frame rate.
-    
-    Args:
-        input_file: Path to the input video file
-        output_file: Path to save the interpolated video
-        target_fps: Target frame rate for interpolation
-        mi_mode: Motion interpolation mode (default: mci)
-        mc_mode: Motion compensation mode (default: aobmc)
-        
-    Note:
-        This function requires ffmpeg to be installed on your system.
-        If ffmpeg is not found, the function will fall back to the non-interpolated video.
-    """
-    cmd = [
-        "ffmpeg", "-y", "-i", input_file, 
-        "-vf", f"minterpolate=fps={target_fps}:mi_mode={mi_mode}:mc_mode={mc_mode}", 
-        "-c:v", "libx264", "-c:a", "copy", output_file
-    ]
-    try:
-        subprocess.run(cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        print(f"Successfully interpolated video to {target_fps} fps: {output_file}")
-    except subprocess.CalledProcessError as e:
-        print(f"Error interpolating video: {e}")
-        # If interpolation fails, copy the original file
-        shutil.copy(input_file, output_file)
-        print(f"Falling back to non-interpolated version: {output_file}")
-    except FileNotFoundError:
-        print(f"Error: ffmpeg not found. Please install ffmpeg to use interpolation features.")
-        # If ffmpeg is not found, copy the original file
-        shutil.copy(input_file, output_file)
-        print(f"Falling back to non-interpolated version: {output_file}")
 
 def combine_videos(output_files, output_file):
     if not output_files:
@@ -147,7 +169,7 @@ def combine_videos(output_files, output_file):
     final_clip.write_videofile(output_file, codec="libx264")
     print(f"Combined video saved as {output_file}")
 
-def process_file(input_file, output_dir, fps, percentage, interpolate=False, target_fps=None, mi_mode="mci", mc_mode="aobmc"):
+def process_file(input_file, output_dir, fps, percentage, interpolate=False, target_fps=None, mi_mode="mci", mc_mode="aobmc", scale=None, scale_width=None, scale_height=None):
     percentage_msg = f"({percentage}% in first file, {100 - percentage}% in second file)" if percentage != 100 else ""
     
     # Calculate actual target FPS for log message if interpolation is enabled
@@ -155,9 +177,19 @@ def process_file(input_file, output_dir, fps, percentage, interpolate=False, tar
     if interpolate and display_fps is None:
         display_fps = fps * 2
         
-    interp_msg = f" with interpolation to {display_fps} fps" if interpolate else ""
-    print(f"Processing: {input_file} {percentage_msg}{interp_msg}")
-    return webp_mp4(input_file, output_dir, fps, percentage, interpolate, target_fps, mi_mode, mc_mode)
+    # Build processing message
+    processing_msg = []
+    if interpolate:
+        processing_msg.append(f"interpolation to {display_fps} fps")
+    if scale:
+        processing_msg.append(f"scaling by {scale}x")
+    elif scale_width and scale_height:
+        processing_msg.append(f"scaling to {scale_width}x{scale_height}")
+        
+    process_msg = f" with {' and '.join(processing_msg)}" if processing_msg else ""
+    
+    print(f"Processing: {input_file} {percentage_msg}{process_msg}")
+    return webp_mp4(input_file, output_dir, fps, percentage, interpolate, target_fps, mi_mode, mc_mode, scale, scale_width, scale_height)
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Convert WEBP files to MP4 and optionally combine them")
@@ -176,6 +208,10 @@ def parse_arguments():
     parser.add_argument("--mc_mode", default="aobmc", 
                         choices=["obmc", "aobmc"], 
                         help="Motion compensation mode: obmc (Overlapped Block) or aobmc (Adaptive Overlapped Block) (default: aobmc)")
+    # Scaling options
+    parser.add_argument("--scale", type=float, help="Scale factor for video dimensions (e.g., 1.5 for 150% size)")
+    parser.add_argument("--scale_width", type=int, help="Target width for scaling (overrides --scale)")
+    parser.add_argument("--scale_height", type=int, help="Target height for scaling (overrides --scale)")
     return parser.parse_args()
 
 if __name__ == "__main__":
@@ -204,7 +240,10 @@ if __name__ == "__main__":
                           args.interpolate,
                           args.target_fps,
                           args.mi_mode,
-                          args.mc_mode)
+                          args.mc_mode,
+                          args.scale,
+                          args.scale_width,
+                          args.scale_height)
             for input_file in input_files
         ]
         
